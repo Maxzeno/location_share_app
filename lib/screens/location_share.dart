@@ -104,19 +104,23 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
+          final user = AuthService().currentUser;
 
           // Extract markers from Firestore snapshot
           final docs = snapshot.data?.docs ?? [];
           _markers.clear();
-          for (var doc in docs) {
-            var data = doc.data() as Map<String, dynamic>;
+
+          for (var index in List.generate(docs.length, (index) => index)) {
+            var data = docs[index].data() as Map<String, dynamic>;
             if (data.containsKey('latitude') && data.containsKey('longitude')) {
               LatLng position = LatLng(data['latitude'], data['longitude']);
               _markers.add(
                 Marker(
-                  markerId: MarkerId(doc.id),
+                  markerId: MarkerId(docs[index].id),
                   position: position,
-                  infoWindow: InfoWindow(title: "User: ${doc.id}"),
+                  infoWindow: InfoWindow(
+                    title: docs[index].id == user!.uid ? "You" : "User: $index",
+                  ),
                 ),
               );
             }
