@@ -4,34 +4,42 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Sign Up
-  Future<User?> signUp(String email, String password) async {
+  Future<String?> signUp(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth
-          .createUserWithEmailAndPassword(email: email, password: password);
-      return userCredential.user;
-    } catch (e) {
-      print('SignUp Error: $e');
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Something went wrong";
     }
   }
 
   // Sign In
-  Future<User?> signIn(String email, String password) async {
+  Future<String?> signIn(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return userCredential.user;
-    } catch (e) {
-      print('SignIn Error: $e');
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Something went wrong";
     }
   }
 
   // Sign Out
-  Future<void> signOut() async {
-    await _auth.signOut();
+  Future<String?> signOut() async {
+    try {
+      await _auth.signOut();
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Something went wrong";
+    }
   }
 
   // Get Current User
