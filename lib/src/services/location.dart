@@ -18,7 +18,6 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      print('Location Error: $e');
       return null;
     }
   }
@@ -28,7 +27,6 @@ class LocationService {
     await _firestore.collection('locations').doc(userId).set({
       'latitude': position.latitude,
       'longitude': position.longitude,
-      'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
