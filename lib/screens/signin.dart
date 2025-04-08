@@ -122,21 +122,21 @@ class _SigninScreenState extends State<SigninScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           kSizedBox,
-                          const FormText(text: 'Username'),
+                          const FormText(text: 'Email'),
                           kHalfSizedBox,
                           MyTextFormField(
                             controller: _userEmailEC,
                             validator: (value) {
                               if (value == null || value!.isEmpty) {
                                 _userEmailFN.requestFocus();
-                                return "Enter your username";
+                                return "Enter your email";
                               }
                               return null;
                             },
 
                             textInputAction: TextInputAction.next,
                             nameFocusNode: _userEmailFN,
-                            hintText: "Enter username",
+                            hintText: "Enter email",
                           ),
                           kSizedBox,
                           const FormText(text: 'Password'),

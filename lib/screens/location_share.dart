@@ -8,11 +8,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location_share_app/src/controllers/signout.dart';
 import 'package:location_share_app/src/services/auth.dart';
 import 'package:location_share_app/src/services/location.dart';
-import 'package:location_share_app/src/utils/spacing.dart';
 
 class LocationShareScreen extends StatefulWidget {
   const LocationShareScreen({super.key});
-
   static const routeName = '/location-share';
 
   @override
@@ -20,7 +18,6 @@ class LocationShareScreen extends StatefulWidget {
 }
 
 class _LocationShareScreenState extends State<LocationShareScreen> {
-  final Completer<GoogleMapController> _googleMapController = Completer();
   GoogleMapController? _newGoogleMapController;
   final Set<Marker> _markers = {};
   StreamSubscription<Position>? _positionStream;
@@ -34,17 +31,14 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
   }
 
   void _onMapCreated(GoogleMapController controller) {
-    if (!_googleMapController.isCompleted) {
-      _googleMapController.complete(controller);
-    }
     _newGoogleMapController = controller;
   }
 
   void _startLocationUpdates() async {
-    bool permissionGranted =
-        await LocationService().requestLocationPermission();
-    if (!permissionGranted) return;
+    if (!await LocationService().requestLocationPermission()) return;
+
     final user = AuthService().currentUser;
+    if (user == null) return;
 
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -52,18 +46,15 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
         distanceFilter: 10,
       ),
     ).listen((Position position) async {
-      await LocationService().updateLocation(user!.uid, position);
-
-      if (_newGoogleMapController != null) {
-        _newGoogleMapController!.animateCamera(
-          CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
-        );
-      }
+      await LocationService().updateLocation(user.uid, position);
+      _newGoogleMapController?.animateCamera(
+        CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
+      );
     });
 
-    _updateTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      Position? position = await Geolocator.getCurrentPosition();
-      await LocationService().updateLocation(user!.uid, position);
+    _updateTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      final position = await Geolocator.getCurrentPosition();
+      await LocationService().updateLocation(user.uid, position);
     });
   }
 
@@ -76,23 +67,29 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Location share"),
+        title: const Text("Location share"),
         actions: [
           GetBuilder<SignoutController>(
             builder: (signoutController) {
               return InkWell(
-                onTap: () {
-                  signoutController.signiout();
-                },
-                child: Text(
-                  signoutController.isLoading.value ? 'Loading...' : 'Signout',
+                onTap: signoutController.signiout,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Center(
+                    child: Text(
+                      signoutController.isLoading.value
+                          ? 'Loading...'
+                          : 'Signout',
+                    ),
+                  ),
                 ),
               );
             },
           ),
-          kWidthSizedBox,
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -104,22 +101,20 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
-          final user = AuthService().currentUser;
 
-          // Extract markers from Firestore snapshot
-          final docs = snapshot.data?.docs ?? [];
           _markers.clear();
+          final docs = snapshot.data?.docs ?? [];
 
-          for (var index in List.generate(docs.length, (index) => index)) {
-            var data = docs[index].data() as Map<String, dynamic>;
+          for (var i = 0; i < docs.length; i++) {
+            final data = docs[i].data() as Map<String, dynamic>;
             if (data.containsKey('latitude') && data.containsKey('longitude')) {
-              LatLng position = LatLng(data['latitude'], data['longitude']);
+              final position = LatLng(data['latitude'], data['longitude']);
               _markers.add(
                 Marker(
-                  markerId: MarkerId(docs[index].id),
+                  markerId: MarkerId(docs[i].id),
                   position: position,
                   infoWindow: InfoWindow(
-                    title: docs[index].id == user!.uid ? "You" : "User: $index",
+                    title: docs[i].id == user?.uid ? "You" : "User $i",
                   ),
                 ),
               );
@@ -127,7 +122,6 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
           }
 
           return GoogleMap(
-            mapType: MapType.normal,
             onMapCreated: _onMapCreated,
             initialCameraPosition: CameraPosition(
               target:
@@ -137,18 +131,14 @@ class _LocationShareScreenState extends State<LocationShareScreen> {
               zoom: 14,
             ),
             markers: _markers,
-            polylines: {},
-            padding: const EdgeInsets.only(bottom: 50),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+            zoomControlsEnabled: true,
+            scrollGesturesEnabled: true,
+            rotateGesturesEnabled: true,
             compassEnabled: true,
             mapToolbarEnabled: true,
-            minMaxZoomPreference: MinMaxZoomPreference.unbounded,
-            tiltGesturesEnabled: true,
-            zoomControlsEnabled: true,
-            zoomGesturesEnabled: true,
-            myLocationButtonEnabled: true,
-            myLocationEnabled: true,
-            rotateGesturesEnabled: true,
-            scrollGesturesEnabled: true,
+            padding: const EdgeInsets.only(bottom: 50),
           );
         },
       ),

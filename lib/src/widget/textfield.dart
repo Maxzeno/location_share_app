@@ -29,7 +29,7 @@ class MyTextFormField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      // onTap: onTap,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       keyboardType: keyboardType,
       focusNode: nameFocusNode,
       controller: controller,
@@ -41,7 +41,6 @@ class MyTextFormField extends StatelessWidget {
       cursorColor: kSecondaryColor,
       autocorrect: true,
       obscureText: obscureText,
-
       enableSuggestions: true,
       maxLines: 1,
       style: const TextStyle(
